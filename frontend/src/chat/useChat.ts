@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { clearHistory, fetchHistory, streamMessage, type ChatMessage, type Role } from '../api/chat'
 import { describeError, isUnauthorized } from '../api/errors'
+import { createTypewriter, type Typewriter } from './typewriter'
 
 // The backend returns history in pages of this size. A full page means older messages may exist.
 const PAGE_SIZE = 50
@@ -27,6 +28,7 @@ export function useChat(onUnauthorized: () => void, onReplied: () => void) {
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const typewriterRef = useRef<Typewriter | null>(null)
 
   const fail = useCallback((failure: unknown) => {
     if (isUnauthorized(failure)) onUnauthorized()
@@ -53,8 +55,11 @@ export function useChat(onUnauthorized: () => void, onReplied: () => void) {
     }
   }, [fail])
 
-  // Leaving the chat (logout, closing) cancels a reply that is still streaming.
-  useEffect(() => () => abortRef.current?.abort(), [])
+  // Leaving the chat (logout, closing) cancels a reply that is still streaming or typing.
+  useEffect(() => () => {
+    abortRef.current?.abort()
+    typewriterRef.current?.stop()
+  }, [])
 
   // Returns false when the message was not sent, so the input can get its text back.
   const send = useCallback(async (text: string): Promise<boolean> => {
@@ -71,18 +76,24 @@ export function useChat(onUnauthorized: () => void, onReplied: () => void) {
       { key: replyKey, role: 'ASSISTANT', content: '', pending: true },
     ])
 
+    // Tokens go into the typewriter, which reveals them on screen at a steady pace.
+    const typewriter = createTypewriter(visible =>
+      setMessages(previous => previous.map(m => (m.key === replyKey ? { ...m, content: visible } : m))))
+    typewriterRef.current = typewriter
+
     try {
-      const saved = await streamMessage(
-        text,
-        token => setMessages(previous =>
-          previous.map(m => (m.key === replyKey ? { ...m, content: m.content + token } : m))),
-        controller.signal,
-      )
-      setMessages(previous => previous.map(m => (m.key === replyKey ? toDisplay(saved) : m)))
+      const saved = await streamMessage(text, token => typewriter.push(token), controller.signal)
+      // Let the typing finish before the bubble becomes the saved message.
+      await typewriter.drain()
+      // Same key as before, so React updates this bubble in place instead of replacing it.
+      setMessages(previous => previous.map(m => (m.key === replyKey
+        ? { ...m, id: saved.id, content: saved.content, pending: false }
+        : m)))
       // The model may have saved a memory while answering.
       onReplied()
       return true
     } catch (failure) {
+      typewriter.stop()
       if (controller.signal.aborted) return false
       // The backend saved nothing, so neither bubble should stay.
       setMessages(previous => previous.filter(m => m.key !== userKey && m.key !== replyKey))
