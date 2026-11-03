@@ -47,7 +47,7 @@ public class ChatService {
         this.summaryService = summaryService;
     }
 
-    public String reply(User user, String userMessage) {
+    public ChatMessage reply(User user, String userMessage) {
         List<ChatMessage> window = loadWindow(user.getId());
         List<String> memories = memoryService.recall(user.getId(), userMessage);
         Optional<String> summary = summaryService.findSummary(user.getId());
@@ -61,7 +61,7 @@ public class ChatService {
             .call()
             .content();
 
-        chatMessageRepository.saveAll(List.of(
+        List<ChatMessage> saved = chatMessageRepository.saveAll(List.of(
             new ChatMessage(user, MessageRole.USER, userMessage),
             new ChatMessage(user, MessageRole.ASSISTANT, reply)));
 
@@ -69,7 +69,7 @@ public class ChatService {
             summaryService.updateIfNeeded(user.getId(), window.getFirst().getId());
         }
 
-        return reply;
+        return saved.getLast();
     }
 
     public List<ChatMessage> getHistory(Long userId) {

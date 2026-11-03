@@ -26,11 +26,11 @@ public class ChatController {
     }
 
     @PostMapping
-    public ChatResponse chat(@AuthenticationPrincipal OidcUser principal,
-                             @Valid @RequestBody ChatRequest request) {
+    public ChatMessageResponse chat(@AuthenticationPrincipal OidcUser principal,
+                                    @Valid @RequestBody ChatRequest request) {
         User user = userService.getByGoogleSub(principal.getSubject());
-        String reply = chatService.reply(user, request.message());
-        return new ChatResponse(reply);
+        ChatMessage reply = chatService.reply(user, request.message());
+        return ChatMessageResponse.from(reply);
     }
 
     @GetMapping("/history")
