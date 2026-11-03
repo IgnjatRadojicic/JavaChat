@@ -19,15 +19,18 @@ public class ChatController {
 
     private final ChatService chatService;
     private final UserService userService;
+    private final ChatRateLimiter chatRateLimiter;
 
-    public ChatController(ChatService chatService, UserService userService) {
+    public ChatController(ChatService chatService, UserService userService, ChatRateLimiter chatRateLimiter) {
         this.chatService = chatService;
         this.userService = userService;
+        this.chatRateLimiter = chatRateLimiter;
     }
 
     @PostMapping
     public ChatMessageResponse chat(@AuthenticationPrincipal OidcUser principal,
                                     @Valid @RequestBody ChatRequest request) {
+        chatRateLimiter.check(principal.getSubject());
         User user = userService.getByGoogleSub(principal.getSubject());
         ChatMessage reply = chatService.reply(user, request.message());
         return ChatMessageResponse.from(reply);

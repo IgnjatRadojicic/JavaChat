@@ -1,5 +1,6 @@
 package com.javachat.config;
 
+import com.javachat.chat.RateLimitExceededException;
 import com.openai.errors.OpenAIException;
 import com.openai.errors.RateLimitException;
 import org.slf4j.Logger;
@@ -38,6 +39,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "The request is invalid.");
         problem.setProperty("errors", errors);
         return ResponseEntity.badRequest().body(problem);
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ProblemDetail> handleUserRateLimit(RateLimitExceededException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS,
+            "You are sending messages too quickly. Please wait a moment.");
+        problem.setProperty("retryAfterSeconds", ex.getRetryAfterSeconds());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+            .body(problem);
     }
 
     @ExceptionHandler(RateLimitException.class)
