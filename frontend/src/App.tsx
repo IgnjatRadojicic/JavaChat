@@ -1,8 +1,9 @@
 import { useAuth } from './auth/useAuth'
+import { Chat } from './components/Chat'
 import { Landing } from './components/Landing'
 
 function App() {
-  const { state, retry, signOut } = useAuth()
+  const { state, retry, signOut, markSignedOut } = useAuth()
 
   switch (state.status) {
     case 'loading':
@@ -24,7 +25,7 @@ function App() {
         <main>
           <p>Signed in as {state.user.name ?? state.user.email}</p>
           <button type="button" onClick={signOut}>Log out</button>
-          {/* 6.5: the chat view goes here */}
+          <Chat onUnauthorized={markSignedOut} />
         </main>
       )
   }
