@@ -36,6 +36,10 @@ public class SummaryService {
         return summaryRepository.findById(userId).map(ConversationSummary::getSummary);
     }
 
+    public void clear(Long userId) {
+        summaryRepository.deleteById(userId);
+    }
+
     @Async
     public void updateIfNeeded(Long userId, Long windowStartId) {
         Optional<ConversationSummary> existing = summaryRepository.findById(userId);

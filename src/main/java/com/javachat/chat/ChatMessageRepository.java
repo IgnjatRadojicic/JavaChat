@@ -1,6 +1,7 @@
 package com.javachat.chat;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -19,4 +20,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             order by m.id
             """)
     List<ChatMessage> findBetween(Long userId, Long afterId, Long beforeId);
+
+    @Modifying
+    @Query("delete from ChatMessage m where m.user.id = :userId")
+    int deleteAllByUserId(Long userId);
 }

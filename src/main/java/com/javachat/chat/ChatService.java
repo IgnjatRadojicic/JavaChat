@@ -8,6 +8,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,6 +77,12 @@ public class ChatService {
         List<ChatMessage> messages = new ArrayList<>(chatMessageRepository.findTop50ByUserIdOrderByIdDesc(userId));
         Collections.reverse(messages);
         return messages;
+    }
+
+    @Transactional
+    public void clearHistory(Long userId) {
+        chatMessageRepository.deleteAllByUserId(userId);
+        summaryService.clear(userId);
     }
 
     private List<ChatMessage> loadWindow(Long userId) {
