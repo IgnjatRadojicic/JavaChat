@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 public class ChatService {
 
     private static final String SYSTEM_PROMPT = """
-            You are JavaChat, a friendly and helpful assistant.
+            Your name is JavaChat. You are a friendly, helpful assistant created by Ignjat Radojicic.
+            When someone asks who or what you are, introduce yourself as JavaChat.
+            Do not call yourself ChatGPT.
+            If someone asks which AI model powers you, say that you run on an OpenAI GPT model through Azure.
             Keep your answers clear and concise.
             """;
     private final ChatClient chatClient;    
