@@ -48,29 +48,12 @@ public class ChatService {
         this.summaryService = summaryService;
     }
 
+    private record PreparedChat(List<ChatMessage> window, ChatClient.ChatClientRequestSpec request) {}
+
     public ChatMessage reply(User user, String userMessage) {
-        List<ChatMessage> window = loadWindow(user.getId());
-        List<String> memories = memoryService.recall(user.getId(), userMessage);
-        Optional<String> summary = summaryService.findSummary(user.getId());
-
-        String reply = chatClient.prompt()
-            .system(buildSystemPrompt(summary, memories))
-            .messages(window.stream().map(this::toAiMessage).toList())
-            .user(userMessage)
-            .tools(memoryTools)
-            .toolContext(Map.of(MemoryTools.USER_ID_CONTEXT_KEY, user.getId()))
-            .call()
-            .content();
-
-        List<ChatMessage> saved = chatMessageRepository.saveAll(List.of(
-            new ChatMessage(user, MessageRole.USER, userMessage),
-            new ChatMessage(user, MessageRole.ASSISTANT, reply)));
-
-        if (!window.isEmpty()) {
-            summaryService.updateIfNeeded(user.getId(), window.getFirst().getId());
-        }
-
-        return saved.getLast();
+        PreparedChat prepared = prepare(user, userMessage);
+        String reply = prepared.request().call().content();
+        return saveExchange(user, userMessage, reply, prepared.window());
     }
 
     public List<ChatMessage> getHistory(Long userId, Long beforeId) {
@@ -87,6 +70,33 @@ public class ChatService {
     public void clearHistory(Long userId) {
         chatMessageRepository.deleteAllByUserId(userId);
         summaryService.clear(userId);
+    }
+
+    private PreparedChat prepare(User user, String userMessage) {
+        List<ChatMessage> window = loadWindow(user.getId());
+        List<String> memories = memoryService.recall(user.getId(), userMessage);
+        Optional<String> summary = summaryService.findSummary(user.getId());
+
+        ChatClient.ChatClientRequestSpec request = chatClient.prompt()
+            .system(buildSystemPrompt(summary, memories))
+            .messages(window.stream().map(this::toAiMessage).toList())
+            .user(userMessage)
+            .tools(memoryTools)
+            .toolContext(Map.of(MemoryTools.USER_ID_CONTEXT_KEY, user.getId()));
+
+        return new PreparedChat(window, request);
+    }
+
+    private ChatMessage saveExchange(User user, String userMessage, String reply, List<ChatMessage> window) {
+        List<ChatMessage> saved = chatMessageRepository.saveAll(List.of(
+            new ChatMessage(user, MessageRole.USER, userMessage),
+            new ChatMessage(user, MessageRole.ASSISTANT, reply)));
+
+        if (!window.isEmpty()) {
+            summaryService.updateIfNeeded(user.getId(), window.getFirst().getId());
+        }
+
+        return saved.getLast();
     }
 
     private List<ChatMessage> loadWindow(Long userId) {
