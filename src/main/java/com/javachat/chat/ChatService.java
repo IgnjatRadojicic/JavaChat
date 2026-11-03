@@ -1,18 +1,19 @@
 package com.javachat.chat;
 
+import com.javachat.memory.MemoryService;
+import com.javachat.memory.MemoryTools;
 import com.javachat.user.User;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
-import com.javachat.memory.MemoryService;
-import java.util.stream.Collectors;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import com.javachat.memory.MemoryTools;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class ChatService {
@@ -32,22 +33,28 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final MemoryTools memoryTools;
     private final MemoryService memoryService;
+    private final SummaryService summaryService;
 
-
-    public ChatService(ChatClient.Builder chatClientBuilder, ChatMessageRepository chatMessageRepository, MemoryTools memoryTools, MemoryService memoryService) {
+    public ChatService(ChatClient.Builder chatClientBuilder,
+                       ChatMessageRepository chatMessageRepository,
+                       MemoryTools memoryTools,
+                       MemoryService memoryService,
+                       SummaryService summaryService) {
         this.chatClient = chatClientBuilder.build();
         this.chatMessageRepository = chatMessageRepository;
         this.memoryTools = memoryTools;
         this.memoryService = memoryService;
+        this.summaryService = summaryService;
     }
 
     public String reply(User user, String userMessage) {
-        List<Message> history = loadHistory(user.getId());
+        List<ChatMessage> window = loadWindow(user.getId());
         List<String> memories = memoryService.recall(user.getId(), userMessage);
+        Optional<String> summary = summaryService.findSummary(user.getId());
 
         String reply = chatClient.prompt()
-            .system(buildSystemPrompt(memories))
-            .messages(history)
+            .system(buildSystemPrompt(summary, memories))
+            .messages(window.stream().map(this::toAiMessage).toList())
             .user(userMessage)
             .tools(memoryTools)
             .toolContext(Map.of(MemoryTools.USER_ID_CONTEXT_KEY, user.getId()))
@@ -58,6 +65,10 @@ public class ChatService {
             new ChatMessage(user, MessageRole.USER, userMessage),
             new ChatMessage(user, MessageRole.ASSISTANT, reply)));
 
+        if (!window.isEmpty()) {
+            summaryService.updateIfNeeded(user.getId(), window.getFirst().getId());
+        }
+
         return reply;
     }
 
@@ -67,8 +78,8 @@ public class ChatService {
         return messages;
     }
 
-    private List<Message> loadHistory(Long userId) {
-        List<Message> history = new ArrayList<>();
+    private List<ChatMessage> loadWindow(Long userId) {
+        List<ChatMessage> window = new ArrayList<>();
         int usedChars = 0;
 
         for (ChatMessage message : chatMessageRepository.findTop20ByUserIdOrderByIdDesc(userId)) {
@@ -76,27 +87,28 @@ public class ChatService {
             if (usedChars > HISTORY_CHAR_BUDGET) {
                 break;
             }
-            history.add(toAiMessage(message));
+            window.add(message);
         }
 
-        Collections.reverse(history);
-        return history;
+        Collections.reverse(window);
+        return window;
     }
-    private String buildSystemPrompt(List<String> memories) {
-        if (memories.isEmpty()) {
-            return SYSTEM_PROMPT;
+
+    private String buildSystemPrompt(Optional<String> summary, List<String> memories) {
+        StringBuilder prompt = new StringBuilder(SYSTEM_PROMPT);
+
+        summary.ifPresent(text -> prompt
+            .append("\nSummary of the earlier conversation:\n")
+            .append(text)
+            .append('\n'));
+
+        if (!memories.isEmpty()) {
+            prompt.append("\nKnown facts about the user from earlier conversations:\n");
+            memories.forEach(memory -> prompt.append("- ").append(memory).append('\n'));
+            prompt.append("Use these facts when they are relevant. Do not save them again.\n");
         }
 
-        String facts = memories.stream()
-            .map(memory -> "- " + memory)
-            .collect(Collectors.joining("\n"));
-
-        return SYSTEM_PROMPT + """
-
-                Known facts about the user from earlier conversations:
-                %s
-                Use these facts when they are relevant. Do not save them again.
-                """.formatted(facts);
+        return prompt.toString();
     }
 
     private Message toAiMessage(ChatMessage message) {
