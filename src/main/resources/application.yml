@@ -81,3 +81,10 @@ management:
     web:
       exposure:
         include: health
+
+# OpenAPI description and Swagger UI (both require login)
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
