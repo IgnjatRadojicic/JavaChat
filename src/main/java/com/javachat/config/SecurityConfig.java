@@ -18,6 +18,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                     .userInfoEndpoint(userInfo -> userInfo.oidcUserService(googleOidcUserService)))
+                .csrf(csrf -> csrf.spa())    
             .logout(logout -> logout.logoutSuccessUrl("/login?logout"));
 
         return http.build();
