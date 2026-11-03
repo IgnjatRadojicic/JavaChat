@@ -32,6 +32,17 @@ class SecurityRulesTest extends IntegrationTest {
             .andExpect(header().doesNotExist("Location"));
     }
 
+    // The signed out landing page needs its scripts, styles, logo and background before anyone logs in.
+    // Tests run without the built frontend, so a missing file answers 404, which still proves it was let through.
+    @ParameterizedTest
+    @ValueSource(strings = {"/", "/index.html", "/assets/index.js", "/images/logo-512.png", "/images/landing.webp"})
+    void frontendFilesArePublic(String path) throws Exception {
+        mvc.perform(get(path).accept(MediaType.TEXT_HTML))
+            .andExpect(result -> assertThat(result.getResponse().getStatus())
+                .as("%s must not ask for a login", path)
+                .isIn(200, 404));
+    }
+
     @Test
     void apiCallsAreNotRememberedAsThePlaceToReturnToAfterLogin() throws Exception {
         MockHttpSession session = new MockHttpSession();
