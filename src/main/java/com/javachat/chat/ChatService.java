@@ -73,8 +73,12 @@ public class ChatService {
         return saved.getLast();
     }
 
-    public List<ChatMessage> getHistory(Long userId) {
-        List<ChatMessage> messages = new ArrayList<>(chatMessageRepository.findTop50ByUserIdOrderByIdDesc(userId));
+    public List<ChatMessage> getHistory(Long userId, Long beforeId) {
+        List<ChatMessage> newestFirst = beforeId == null
+            ? chatMessageRepository.findTop50ByUserIdOrderByIdDesc(userId)
+            : chatMessageRepository.findTop50ByUserIdAndIdLessThanOrderByIdDesc(userId, beforeId);
+
+        List<ChatMessage> messages = new ArrayList<>(newestFirst);
         Collections.reverse(messages);
         return messages;
     }

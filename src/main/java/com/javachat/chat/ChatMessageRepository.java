@@ -12,6 +12,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     List<ChatMessage> findTop50ByUserIdOrderByIdDesc(Long userId);
 
+    List<ChatMessage> findTop50ByUserIdAndIdLessThanOrderByIdDesc(Long userId, Long beforeId);
+
     @Query("""
             select m from ChatMessage m
             where m.user.id = :userId

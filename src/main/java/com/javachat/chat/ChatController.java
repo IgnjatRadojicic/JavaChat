@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -39,9 +40,10 @@ public class ChatController {
     }
 
     @GetMapping("/history")
-    public List<ChatMessageResponse> history(@AuthenticationPrincipal OidcUser principal) {
+    public List<ChatMessageResponse> history(@AuthenticationPrincipal OidcUser principal,
+                                             @RequestParam(required = false) Long before) {
         User user = userService.getByGoogleSub(principal.getSubject());
-        return chatService.getHistory(user.getId()).stream()
+        return chatService.getHistory(user.getId(), before).stream()
             .map(ChatMessageResponse::from)
             .toList();
     }
