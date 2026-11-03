@@ -1,13 +1,14 @@
 package com.javachat;
 
+import com.javachat.support.IntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class JavachatApplicationTests {
+class JavachatApplicationTests extends IntegrationTest {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void contextLoadsAndMigrationsApplyToARealDatabase() {
+        Integer applied = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class);
+        org.assertj.core.api.Assertions.assertThat(applied).isEqualTo(4);
+    }
 }

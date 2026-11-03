@@ -1,0 +1,15 @@
+# Test profile: real Postgres (Testcontainers), fake AI models, dummy credentials.
+# The placeholders below satisfy ${...} references in application.yml, so the
+# suite runs without a .env file and without any Azure or Google access.
+DB_PASSWORD: test
+GOOGLE_CLIENT_ID: test-client-id
+GOOGLE_CLIENT_SECRET: test-client-secret
+AZURE_OPENAI_ENDPOINT: http://localhost:1
+AZURE_OPENAI_API_KEY: test-key
+
+spring:
+  ai:
+    model:
+      # The fakes in TestAiConfiguration replace the real Azure models
+      chat: none
+      embedding: none
