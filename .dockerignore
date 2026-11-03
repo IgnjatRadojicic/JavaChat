@@ -1,0 +1,8 @@
+# Keep secrets and build output out of the Docker image
+.env
+*.env
+target/
+.git/
+.vscode/
+.idea/
+docker/

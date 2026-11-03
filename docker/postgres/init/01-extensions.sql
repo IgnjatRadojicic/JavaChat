@@ -1,0 +1,4 @@
+-- Extensions used by Spring AI's PgVectorStore
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS hstore;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
