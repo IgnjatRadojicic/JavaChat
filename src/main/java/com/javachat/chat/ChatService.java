@@ -3,12 +3,20 @@ package com.javachat.chat;
 import com.javachat.memory.MemoryService;
 import com.javachat.memory.MemoryTools;
 import com.javachat.user.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +37,7 @@ public class ChatService {
             """;
 
     private static final int HISTORY_CHAR_BUDGET = 8_000;
+    private static final Logger log = LoggerFactory.getLogger(ChatService.class);
 
     private final ChatClient chatClient;
     private final ChatMessageRepository chatMessageRepository;
@@ -54,6 +63,28 @@ public class ChatService {
         PreparedChat prepared = prepare(user, userMessage);
         String reply = prepared.request().call().content();
         return saveExchange(user, userMessage, reply, prepared.window());
+    }
+
+    public Flux<ServerSentEvent<Object>> replyStream(User user, String userMessage) {
+        PreparedChat prepared = prepare(user, userMessage);
+        StringBuilder fullReply = new StringBuilder();
+
+        Flux<ServerSentEvent<Object>> tokens = prepared.request().stream().content()
+            .doOnNext(fullReply::append)
+            .map(token -> event("token", new ChatStreamToken(token)));
+
+        Mono<ServerSentEvent<Object>> done = Mono
+            .fromCallable(() -> saveExchange(user, userMessage, fullReply.toString(), prepared.window()))
+            .subscribeOn(Schedulers.boundedElastic())
+            .map(saved -> event("done", ChatMessageResponse.from(saved)));
+
+        return tokens
+            .concatWith(done)
+            .onErrorResume(error -> {
+                log.error("Streaming reply failed", error);
+                return Mono.just(event("error", ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                    "The assistant is unavailable right now. Please try again shortly.")));
+            });
     }
 
     public List<ChatMessage> getHistory(Long userId, Long beforeId) {
@@ -137,5 +168,9 @@ public class ChatService {
             case USER -> new UserMessage(message.getContent());
             case ASSISTANT -> new AssistantMessage(message.getContent());
         };
+    }
+
+    private static ServerSentEvent<Object> event(String name, Object data) {
+        return ServerSentEvent.builder(data).event(name).build();
     }
 }

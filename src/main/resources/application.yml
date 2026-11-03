@@ -25,6 +25,9 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+    # Streaming replies are async requests; allow long answers to finish
+    async:
+      request-timeout: 2m
 
   # Login with Google. Spring already knows Google's endpoints,
   # so only the client credentials and the requested scopes are needed.

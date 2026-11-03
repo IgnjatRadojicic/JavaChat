@@ -3,7 +3,9 @@ package com.javachat.chat;
 import com.javachat.user.User;
 import com.javachat.user.UserService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+
+import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -37,6 +41,14 @@ public class ChatController {
         User user = userService.getByGoogleSub(principal.getSubject());
         ChatMessage reply = chatService.reply(user, request.message());
         return ChatMessageResponse.from(reply);
+    }
+
+    @PostMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<Object>> chatStream(@AuthenticationPrincipal OidcUser principal,
+                                                    @Valid @RequestBody ChatRequest request) {
+        chatRateLimiter.check(principal.getSubject());
+        User user = userService.getByGoogleSub(principal.getSubject());
+        return chatService.replyStream(user, request.message());
     }
 
     @GetMapping("/history")
