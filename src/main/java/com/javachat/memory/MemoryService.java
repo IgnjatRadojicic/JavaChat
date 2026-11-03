@@ -61,4 +61,12 @@ public class MemoryService {
             memoryId, userId);
         return deletedRows > 0;
     }
+
+    public void forgetAll(Long userId) {
+        jdbcTemplate.update("""
+                DELETE FROM vector_store
+                WHERE (metadata ->> 'userId')::bigint = ?
+                """,
+            userId);
+    }
 }
