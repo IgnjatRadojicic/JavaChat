@@ -1,9 +1,15 @@
+import { useCallback, useState } from 'react'
 import { useAuth } from './auth/useAuth'
+import { AccountBar } from './components/AccountBar'
 import { Chat } from './components/Chat'
 import { Landing } from './components/Landing'
+import { MemoryPanel } from './components/MemoryPanel'
 
 function App() {
   const { state, retry, signOut, markSignedOut } = useAuth()
+  // Bumped after every reply so the memory panel reloads.
+  const [memoryVersion, setMemoryVersion] = useState(0)
+  const refreshMemories = useCallback(() => setMemoryVersion(previous => previous + 1), [])
 
   switch (state.status) {
     case 'loading':
@@ -23,9 +29,9 @@ function App() {
     case 'signedIn':
       return (
         <main>
-          <p>Signed in as {state.user.name ?? state.user.email}</p>
-          <button type="button" onClick={signOut}>Log out</button>
-          <Chat onUnauthorized={markSignedOut} />
+          <AccountBar user={state.user} onSignOut={signOut} onAccountDeleted={markSignedOut} />
+          <Chat onUnauthorized={markSignedOut} onReplied={refreshMemories} />
+          <MemoryPanel version={memoryVersion} onUnauthorized={markSignedOut} />
         </main>
       )
   }

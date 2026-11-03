@@ -1,57 +1,57 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError } from '../api/client'
-import { fetchHistory, streamMessage, type ChatMessage, type Role } from '../api/chat'
+import { clearHistory, fetchHistory, streamMessage, type ChatMessage, type Role } from '../api/chat'
+import { describeError, isUnauthorized } from '../api/errors'
 
-// What the screen shows. Messages not saved yet use a local key and may be pending.
+// The backend returns history in pages of this size. A full page means older messages may exist.
+const PAGE_SIZE = 50
+
+// What the screen shows. Saved messages carry their database id; ones not saved yet
+// use a local key and may be pending.
 export interface DisplayMessage {
   key: string
+  id?: number
   role: Role
   content: string
   pending?: boolean
 }
 
 function toDisplay(message: ChatMessage): DisplayMessage {
-  return { key: `saved-${message.id}`, role: message.role, content: message.content }
+  return { key: `saved-${message.id}`, id: message.id, role: message.role, content: message.content }
 }
 
-function describe(error: unknown): string {
-  if (error instanceof ApiError && error.status === 429) {
-    const wait = error.problem.retryAfterSeconds
-    return wait ? `You are sending messages too quickly. Try again in ${wait} s.` : error.message
-  }
-  return error instanceof Error ? error.message : 'Something went wrong.'
-}
-
-const isUnauthorized = (error: unknown) => error instanceof ApiError && error.status === 401
-
-export function useChat(onUnauthorized: () => void) {
+export function useChat(onUnauthorized: () => void, onReplied: () => void) {
   const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [hasOlder, setHasOlder] = useState(false)
+  const [loadingOlder, setLoadingOlder] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  // Load the saved conversation once.
+  const fail = useCallback((failure: unknown) => {
+    if (isUnauthorized(failure)) onUnauthorized()
+    else setError(describeError(failure))
+  }, [onUnauthorized])
+
+  // Load the newest page of the saved conversation once.
   useEffect(() => {
     let ignore = false
     fetchHistory()
       .then(history => {
         if (ignore) return
         setMessages(history.map(toDisplay))
+        setHasOlder(history.length === PAGE_SIZE)
         setLoading(false)
       })
       .catch((failure: unknown) => {
         if (ignore) return
-        if (isUnauthorized(failure)) onUnauthorized()
-        else {
-          setError(describe(failure))
-          setLoading(false)
-        }
+        fail(failure)
+        setLoading(false)
       })
     return () => {
       ignore = true
     }
-  }, [onUnauthorized])
+  }, [fail])
 
   // Leaving the chat (logout, closing) cancels a reply that is still streaming.
   useEffect(() => () => abortRef.current?.abort(), [])
@@ -79,18 +79,48 @@ export function useChat(onUnauthorized: () => void) {
         controller.signal,
       )
       setMessages(previous => previous.map(m => (m.key === replyKey ? toDisplay(saved) : m)))
+      // The model may have saved a memory while answering.
+      onReplied()
       return true
     } catch (failure) {
       if (controller.signal.aborted) return false
       // The backend saved nothing, so neither bubble should stay.
       setMessages(previous => previous.filter(m => m.key !== userKey && m.key !== replyKey))
-      if (isUnauthorized(failure)) onUnauthorized()
-      else setError(describe(failure))
+      fail(failure)
       return false
     } finally {
       setSending(false)
     }
-  }, [onUnauthorized])
+  }, [fail, onReplied])
 
-  return { messages, loading, sending, error, send }
+  // Fetches the page just before the oldest saved message on screen and puts it in front.
+  const loadOlder = useCallback(async () => {
+    const oldestId = messages.find(m => m.id !== undefined)?.id
+    if (oldestId === undefined) return
+
+    setLoadingOlder(true)
+    try {
+      const page = await fetchHistory(oldestId)
+      setMessages(previous => [...page.map(toDisplay), ...previous])
+      setHasOlder(page.length === PAGE_SIZE)
+    } catch (failure) {
+      fail(failure)
+    } finally {
+      setLoadingOlder(false)
+    }
+  }, [messages, fail])
+
+  // Starts a new conversation. The server keeps long term memories.
+  const clear = useCallback(async () => {
+    try {
+      await clearHistory()
+      setMessages([])
+      setHasOlder(false)
+      setError(null)
+    } catch (failure) {
+      fail(failure)
+    }
+  }, [fail])
+
+  return { messages, loading, sending, hasOlder, loadingOlder, error, send, loadOlder, clear }
 }

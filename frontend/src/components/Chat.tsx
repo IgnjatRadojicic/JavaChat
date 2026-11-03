@@ -1,15 +1,23 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useChat } from '../chat/useChat'
 
-export function Chat({ onUnauthorized }: { onUnauthorized: () => void }) {
-  const { messages, loading, sending, error, send } = useChat(onUnauthorized)
+interface ChatProps {
+  onUnauthorized: () => void
+  onReplied: () => void
+}
+
+export function Chat({ onUnauthorized, onReplied }: ChatProps) {
+  const { messages, loading, sending, hasOlder, loadingOlder, error, send, loadOlder, clear } =
+    useChat(onUnauthorized, onReplied)
   const [draft, setDraft] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Keep the newest text in view as tokens arrive.
+  // Follow the newest message as it grows. Loading older messages adds to the top
+  // without changing the last one, so it does not yank the view to the bottom.
+  const last = messages.at(-1)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages])
+  }, [last?.key, last?.content])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -28,10 +36,26 @@ export function Chat({ onUnauthorized }: { onUnauthorized: () => void }) {
     }
   }
 
+  function startNewConversation() {
+    if (window.confirm('Start a new conversation? JavaChat keeps what it remembers about you.')) {
+      void clear()
+    }
+  }
+
   if (loading) return <p>Loading conversation…</p>
 
   return (
     <section>
+      <button type="button" onClick={startNewConversation} disabled={sending || messages.length === 0}>
+        New conversation
+      </button>
+
+      {hasOlder && (
+        <button type="button" onClick={() => void loadOlder()} disabled={loadingOlder}>
+          {loadingOlder ? 'Loading…' : 'Load older messages'}
+        </button>
+      )}
+
       <ol>
         {messages.map(message => (
           <li key={message.key} style={{ whiteSpace: 'pre-wrap' }}>
