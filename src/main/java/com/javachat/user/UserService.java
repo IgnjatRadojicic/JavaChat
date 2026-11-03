@@ -19,6 +19,12 @@ public class UserService {
                 user.recordLogin(email, name, pictureUrl);
                 return user;
             })
-            .orElseGet(() -> userRepository.save(new User(googleSub, email, name, pictureUrl)));
+            .orElseGet(() -> userRepository.save(new User(googleSub, email, name, pictureUrl))); 
     }
+
+    @Transactional(readOnly = true)
+    public User getByGoogleSub(String googleSub) {
+        return userRepository.findByGoogleSub(googleSub)
+            .orElseThrow(() -> new IllegalStateException("Logged-in user not found in database"));
+}   
 }
