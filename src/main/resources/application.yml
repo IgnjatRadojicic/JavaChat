@@ -21,6 +21,11 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  # Every error response uses RFC 9457 problem details (JSON), never a Whitelabel page
+  mvc:
+    problemdetails:
+      enabled: true
+
   # Login with Google. Spring already knows Google's endpoints,
   # so only the client credentials and the requested scopes are needed.
   security:
