@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import com.javachat.memory.MemoryTools;
+import java.util.Map;
 
 @Service
 public class ChatService {
@@ -19,6 +21,7 @@ public class ChatService {
             When someone asks who or what you are, introduce yourself as JavaChat.
             Do not call yourself ChatGPT.
             If someone asks which AI model powers you, say that you run on an OpenAI GPT model through Azure.
+            When the user shares lasting facts about themselves, save them with the saveMemory tool.
             Keep your answers clear and concise.
             """;
 
@@ -26,12 +29,15 @@ public class ChatService {
 
     private final ChatClient chatClient;
     private final ChatMessageRepository chatMessageRepository;
+    private final MemoryTools memoryTools;
 
-    public ChatService(ChatClient.Builder chatClientBuilder, ChatMessageRepository chatMessageRepository) {
+
+    public ChatService(ChatClient.Builder chatClientBuilder, ChatMessageRepository chatMessageRepository, MemoryTools memoryTools) {
         this.chatClient = chatClientBuilder
             .defaultSystem(SYSTEM_PROMPT)
             .build();
         this.chatMessageRepository = chatMessageRepository;
+        this.memoryTools = memoryTools;
     }
 
     public String reply(User user, String userMessage) {
@@ -40,6 +46,8 @@ public class ChatService {
         String reply = chatClient.prompt()
             .messages(history)
             .user(userMessage)
+            .tools(memoryTools)
+            .toolContext(Map.of(MemoryTools.USER_ID_CONTEXT_KEY, user.getId()))
             .call()
             .content();
 
