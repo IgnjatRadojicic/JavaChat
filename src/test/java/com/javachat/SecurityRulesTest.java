@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -29,6 +30,27 @@ class SecurityRulesTest extends IntegrationTest {
         mvc.perform(get(path).accept(MediaType.TEXT_HTML))
             .andExpect(status().isUnauthorized())
             .andExpect(header().doesNotExist("Location"));
+    }
+
+    @Test
+    void apiCallsAreNotRememberedAsThePlaceToReturnToAfterLogin() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+
+        mvc.perform(get("/api/me").session(session)).andExpect(status().isUnauthorized());
+
+        assertThat(session.getAttribute("SPRING_SECURITY_SAVED_REQUEST"))
+            .as("a saved /api request would send the user to raw JSON after Google login")
+            .isNull();
+    }
+
+    @Test
+    void browserPagesAreStillRememberedForAfterLogin() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+
+        mvc.perform(get("/swagger-ui.html").session(session).accept(MediaType.TEXT_HTML))
+            .andExpect(status().is3xxRedirection());
+
+        assertThat(session.getAttribute("SPRING_SECURITY_SAVED_REQUEST")).isNotNull();
     }
 
     @Test
