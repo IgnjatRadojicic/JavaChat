@@ -1,0 +1,197 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--c-text);
+  background: var(--c-bg-page);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--t-base), color var(--t-base);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  margin: 0;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+/* The leafy scrollbar. Thin, rounded, brand tinted, with a transparent track. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-scroll-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--c-scroll-thumb);
+  border-radius: var(--r-pill);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  transition: background-color var(--t-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-scroll-thumb-hover);
+  background-clip: padding-box;
+}
+
+/* The logo sits in a round badge that follows the theme: white by day, forest at night. */
+.logo-badge {
+  border-radius: 50%;
+  background: var(--c-logo-surface);
+  box-shadow: 0 0 0 1px var(--c-logo-ring), var(--c-shadow-sm);
+  transition: background-color var(--t-base), box-shadow var(--t-base);
+}
+
+/* Shared buttons */
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: inherit;
+  transition: background-color var(--t-fast), transform var(--t-fast), color var(--t-fast);
+}
+
+.icon-button:hover {
+  background: var(--c-hover);
+}
+
+.icon-button:active {
+  transform: scale(0.94);
+}
+
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition: background-color var(--t-fast), border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+.pill-button:hover:not(:disabled) {
+  border-color: var(--c-primary);
+  box-shadow: 0 4px 16px var(--c-primary-a20);
+  transform: translateY(-1px);
+}
+
+.pill-button:disabled {
+  opacity: 0.5;
+}
+
+.pill-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pill-button.danger:hover:not(:disabled) {
+  border-color: var(--c-error);
+  color: var(--c-error);
+  box-shadow: 0 4px 16px var(--c-error-a08);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Motion */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,220 @@
+/* The settings drawer stays mounted and slides in and out, so both directions animate. */
+.settings {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.settings--open {
+  pointer-events: auto;
+}
+
+.settings__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--c-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity var(--t-base);
+}
+
+.settings--open .settings__backdrop {
+  opacity: 1;
+}
+
+.settings__panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(420px, calc(100% - 24px));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: var(--r-lg);
+  background: var(--c-bg-page);
+  border: 1px solid var(--c-border-soft);
+  box-shadow: var(--c-shadow-lg);
+  transform: translateX(calc(100% + 24px));
+  transition: transform 0.45s var(--t-spring);
+}
+
+.settings--open .settings__panel {
+  transform: translateX(0);
+}
+
+.settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px 4px 6px;
+}
+
+.settings__header h2 {
+  font-size: 1.3rem;
+}
+
+.settings__card {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  box-shadow: var(--c-shadow-sm);
+}
+
+.settings__card h3 {
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.settings__hint {
+  font-size: 0.85rem;
+  color: var(--c-text-muted);
+}
+
+.settings__empty {
+  font-size: 0.9rem;
+  color: var(--c-text-soft);
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-sunken);
+}
+
+.settings__error {
+  font-size: 0.88rem;
+  color: var(--c-error);
+}
+
+.settings__profile {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings__profile img,
+.settings__initials {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 3px var(--c-primary-a30);
+}
+
+.settings__initials {
+  display: grid;
+  place-items: center;
+  background: var(--c-primary);
+  color: var(--c-on-brand);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.settings__name {
+  font-weight: 600;
+}
+
+.settings__email {
+  font-size: 0.88rem;
+  color: var(--c-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--c-border);
+  transition: background-color var(--t-base);
+}
+
+.switch--on {
+  background: var(--c-primary);
+}
+
+.switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: transform var(--t-bounce);
+}
+
+.switch--on .switch__thumb {
+  transform: translateX(22px);
+}
+
+/* Memories */
+.memory-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.memory-list__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-sunken);
+  font-size: 0.92rem;
+  animation: pop-in 0.3s var(--t-spring) both;
+}
+
+.memory-list__leaf {
+  width: 18px;
+  height: 18px;
+  color: var(--c-primary);
+}
+
+.memory-list__forget {
+  width: 34px;
+  height: 34px;
+  color: var(--c-text-muted);
+  opacity: 0.6;
+}
+
+.memory-list__forget svg {
+  width: 18px;
+  height: 18px;
+}
+
+.memory-list__item:hover .memory-list__forget {
+  opacity: 1;
+}
+
+.memory-list__forget:hover {
+  color: var(--c-error);
+  background: var(--c-error-a08);
+}
+
+.settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

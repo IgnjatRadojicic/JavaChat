@@ -1,0 +1,125 @@
+/* Design tokens, taken from Plantitask so both apps share one garden.
+   Components only use these variables; dark mode remaps the variables and nothing else. */
+
+:root {
+  /* Brand */
+  --c-primary: #9cc103;
+  --c-primary-dark: #7a9902;
+  --c-primary-soft: #b8d940;
+  --c-primary-a08: rgba(156, 193, 3, 0.08);
+  --c-primary-a12: rgba(156, 193, 3, 0.12);
+  --c-primary-a20: rgba(156, 193, 3, 0.2);
+  --c-primary-a30: rgba(156, 193, 3, 0.3);
+  --c-primary-a40: rgba(156, 193, 3, 0.4);
+  --c-on-brand: #ffffff;
+  --c-earth: #8b7355;
+
+  --c-error: #d32f2f;
+  --c-error-a08: rgba(211, 47, 47, 0.08);
+
+  /* On the landing photo. These do not change in dark mode, because the photo has no dark variant. */
+  --c-on-media: #ffffff;
+  --c-on-media-soft: rgba(255, 255, 255, 0.86);
+  --c-media-scrim: rgba(12, 20, 8, 0.42);
+
+  /* Surfaces */
+  --c-bg-page: #f6f8f1;
+  --c-surface: #ffffff;
+  --c-surface-raised: #ffffff;
+  --c-surface-sunken: #eef2e6;
+  --c-glass: rgba(255, 255, 255, 0.72);
+  --c-glass-strong: rgba(255, 255, 255, 0.9);
+
+  /* Text */
+  --c-text: #1f2a1a;
+  --c-text-soft: #4a5644;
+  --c-text-muted: #7b8676;
+  --c-text-faint: #a9b2a4;
+
+  /* Lines and shadows */
+  --c-border: #dfe6d5;
+  --c-border-soft: #ebf0e3;
+  --c-hover: rgba(31, 42, 26, 0.05);
+  --c-shadow-sm: 0 1px 3px rgba(31, 42, 26, 0.06), 0 1px 2px rgba(31, 42, 26, 0.04);
+  --c-shadow-md: 0 8px 28px rgba(31, 42, 26, 0.08), 0 2px 6px rgba(31, 42, 26, 0.05);
+  --c-shadow-lg: 0 24px 60px rgba(31, 42, 26, 0.14), 0 6px 16px rgba(31, 42, 26, 0.06);
+  --c-scrim: rgba(15, 20, 17, 0.35);
+
+  /* Chat */
+  --c-bubble-user: #eef4dd;
+  --c-bubble-user-text: #1f2a1a;
+
+  /* Scrollbar */
+  --c-scroll-thumb: rgba(122, 153, 2, 0.35);
+  --c-scroll-thumb-hover: rgba(122, 153, 2, 0.6);
+
+  /* The round badge behind the logo */
+  --c-logo-surface: #ffffff;
+  --c-logo-ring: rgba(31, 42, 26, 0.08);
+
+  color-scheme: light;
+
+  /* Type */
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-heading: 'Sora', system-ui, sans-serif;
+
+  /* Shape */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-pill: 999px;
+
+  /* Motion */
+  --t-fast: 0.18s ease;
+  --t-base: 0.3s ease;
+  --t-spring: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --t-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Forest night, the same dark theme as Plantitask: near black with a faint green cast. */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --c-primary: #aed334;
+  --c-primary-dark: #9cc103;
+  --c-primary-soft: #c4e35f;
+  --c-primary-a08: rgba(174, 211, 52, 0.08);
+  --c-primary-a12: rgba(174, 211, 52, 0.12);
+  --c-primary-a20: rgba(174, 211, 52, 0.2);
+  --c-primary-a30: rgba(174, 211, 52, 0.3);
+  --c-primary-a40: rgba(174, 211, 52, 0.4);
+  --c-on-brand: #0f1411;
+  --c-earth: #a89274;
+
+  --c-error: #ef5350;
+  --c-error-a08: rgba(239, 83, 80, 0.1);
+
+  --c-bg-page: #0f1411;
+  --c-surface: #171d18;
+  --c-surface-raised: #1f2720;
+  --c-surface-sunken: #131915;
+  --c-glass: rgba(23, 29, 24, 0.72);
+  --c-glass-strong: rgba(23, 29, 24, 0.92);
+
+  --c-text: #e6ebe4;
+  --c-text-soft: #cfd6cc;
+  --c-text-muted: #929b90;
+  --c-text-faint: #58625a;
+
+  --c-border: #28312a;
+  --c-border-soft: #1f2720;
+  --c-hover: rgba(255, 255, 255, 0.05);
+  --c-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --c-shadow-md: 0 8px 28px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --c-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
+  --c-scrim: rgba(0, 0, 0, 0.55);
+
+  --c-bubble-user: #232d1c;
+  --c-bubble-user-text: #e6ebe4;
+
+  --c-scroll-thumb: rgba(174, 211, 52, 0.22);
+  --c-scroll-thumb-hover: rgba(174, 211, 52, 0.45);
+
+  --c-logo-surface: #1c241d;
+  --c-logo-ring: rgba(174, 211, 52, 0.28);
+}

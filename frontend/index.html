@@ -2,9 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>JavaChat</title>
+    <meta name="description" content="A chat assistant that remembers you. Sign in with Google and it keeps what matters about you for next time." />
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <link rel="apple-touch-icon" href="/images/logo-192.png" />
+
+    <!-- The landing background is the largest thing on the first screen, so start fetching it right away. -->
+    <link rel="preload" as="image" href="/images/landing.webp" type="image/webp" media="(min-width: 901px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/images/landing-960.webp" type="image/webp" media="(max-width: 900px)" fetchpriority="high" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Apply the saved theme before the first paint, so dark mode never flashes white. -->
+    <script>
+      (function () {
+        var theme
+        try { theme = localStorage.getItem('theme') } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

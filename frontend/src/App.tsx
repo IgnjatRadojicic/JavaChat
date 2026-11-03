@@ -1,40 +1,71 @@
 import { useCallback, useState } from 'react'
 import { useAuth } from './auth/useAuth'
-import { AccountBar } from './components/AccountBar'
 import { Chat } from './components/Chat'
+import { InfoDialog } from './components/InfoDialog'
 import { Landing } from './components/Landing'
-import { MemoryPanel } from './components/MemoryPanel'
+import { TopNav, type InfoKind } from './components/TopNav'
+import { useTheme } from './theme/useTheme'
 
 function App() {
+  const { theme, toggle: toggleTheme } = useTheme()
   const { state, retry, signOut, markSignedOut } = useAuth()
-  // Bumped after every reply so the memory panel reloads.
-  const [memoryVersion, setMemoryVersion] = useState(0)
-  const refreshMemories = useCallback(() => setMemoryVersion(previous => previous + 1), [])
+  const [info, setInfo] = useState<InfoKind | null>(null)
+  const closeInfo = useCallback(() => setInfo(null), [])
 
+  let page
   switch (state.status) {
     case 'loading':
-      return <p>Loading…</p>
+      page = (
+        <div className="splash" aria-live="polite">
+          <img src="/images/logo-192.png" alt="" />
+          <span className="splash__brand">JAVACHAT</span>
+          <div className="splash__line" />
+        </div>
+      )
+      break
 
     case 'error':
-      return (
-        <main>
-          <p>Could not reach the server: {state.message}</p>
-          <button type="button" onClick={retry}>Try again</button>
-        </main>
+      page = (
+        <div className="splash">
+          <div className="splash__error" role="alert">
+            <img src="/images/logo-192.png" alt="" />
+            <p>Could not reach JavaChat. {state.message}</p>
+            <button type="button" className="pill-button" onClick={retry}>Try again</button>
+          </div>
+        </div>
       )
+      break
 
     case 'signedOut':
-      return <Landing />
+      page = <Landing />
+      break
 
     case 'signedIn':
-      return (
-        <main>
-          <AccountBar user={state.user} onSignOut={signOut} onAccountDeleted={markSignedOut} />
-          <Chat onUnauthorized={markSignedOut} onReplied={refreshMemories} />
-          <MemoryPanel version={memoryVersion} onUnauthorized={markSignedOut} />
-        </main>
+      page = (
+        <Chat
+          user={state.user}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onSignOut={signOut}
+          onAccountDeleted={markSignedOut}
+          onUnauthorized={markSignedOut}
+        />
       )
+      break
   }
+
+  return (
+    <>
+      <TopNav
+        variant={state.status === 'signedOut' ? 'media' : 'solid'}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onOpenInfo={setInfo}
+      />
+      {page}
+      {info && <InfoDialog kind={info} onClose={closeInfo} />}
+    </>
+  )
 }
 
 export default App
