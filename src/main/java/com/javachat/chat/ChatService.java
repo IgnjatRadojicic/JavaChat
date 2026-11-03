@@ -6,7 +6,8 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
-
+import com.javachat.memory.MemoryService;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,20 +31,22 @@ public class ChatService {
     private final ChatClient chatClient;
     private final ChatMessageRepository chatMessageRepository;
     private final MemoryTools memoryTools;
+    private final MemoryService memoryService;
 
 
-    public ChatService(ChatClient.Builder chatClientBuilder, ChatMessageRepository chatMessageRepository, MemoryTools memoryTools) {
-        this.chatClient = chatClientBuilder
-            .defaultSystem(SYSTEM_PROMPT)
-            .build();
+    public ChatService(ChatClient.Builder chatClientBuilder, ChatMessageRepository chatMessageRepository, MemoryTools memoryTools, MemoryService memoryService) {
+        this.chatClient = chatClientBuilder.build();
         this.chatMessageRepository = chatMessageRepository;
         this.memoryTools = memoryTools;
+        this.memoryService = memoryService;
     }
 
     public String reply(User user, String userMessage) {
         List<Message> history = loadHistory(user.getId());
+        List<String> memories = memoryService.recall(user.getId(), userMessage);
 
         String reply = chatClient.prompt()
+            .system(buildSystemPrompt(memories))
             .messages(history)
             .user(userMessage)
             .tools(memoryTools)
@@ -78,6 +81,22 @@ public class ChatService {
 
         Collections.reverse(history);
         return history;
+    }
+    private String buildSystemPrompt(List<String> memories) {
+        if (memories.isEmpty()) {
+            return SYSTEM_PROMPT;
+        }
+
+        String facts = memories.stream()
+            .map(memory -> "- " + memory)
+            .collect(Collectors.joining("\n"));
+
+        return SYSTEM_PROMPT + """
+
+                Known facts about the user from earlier conversations:
+                %s
+                Use these facts when they are relevant. Do not save them again.
+                """.formatted(facts);
     }
 
     private Message toAiMessage(ChatMessage message) {
