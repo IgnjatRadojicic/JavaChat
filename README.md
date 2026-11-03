@@ -35,6 +35,9 @@ your career can find "works as a Java developer" even when the two share no word
 The model decides what is worth remembering through a tool call. The app decides who the memory
 belongs to.
 
+If you want to learn how every part works, from login to streaming replies, read
+[How JavaChat Works](docs/how-it-works.md).
+
 ## Stack
 
 | | |
