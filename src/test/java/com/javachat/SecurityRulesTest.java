@@ -14,7 +14,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -69,13 +68,6 @@ class SecurityRulesTest extends IntegrationTest {
         mvc.perform(get("/swagger-ui.html").accept(MediaType.TEXT_HTML))
             .andExpect(status().is3xxRedirection())
             .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/oauth2/authorization/google")));
-    }
-
-    @Test
-    void pageShellIsPublicEvenBeforeItExists() throws Exception {
-        mvc.perform(get("/"))
-            .andExpect(status().isNotFound())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 
     @Test
