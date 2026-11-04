@@ -29,6 +29,8 @@ jobs:
       - name: Sync deploy directory
         run: |
           cd "$DEPLOY_DIR"
+          # reset --hard below would wipe whatever repository lives here, so make sure it is this one.
+          git remote get-url origin | grep -q 'IgnjatRadojicic/JavaChat' || { echo "DEPLOY_DIR is not a JavaChat clone"; exit 1; }
           git fetch origin main
           git reset --hard origin/main
 
