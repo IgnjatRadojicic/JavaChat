@@ -1,0 +1,78 @@
+# Tests and deploys JavaChat on the Debian server on every push to main.
+#
+# Runs on the self-hosted runner registered to this repository only. It deliberately has no
+# pull_request trigger: a pull request from a fork must never run code on the server.
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits instead of racing the one in progress.
+concurrency:
+  group: deploy-javachat
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # The live stack (its .env and the database volume) lives here, not in the runner's _work folder.
+  DEPLOY_DIR: /home/dragonshield/JavaChat
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, javachat]
+    timeout-minutes: 30
+    steps:
+      - name: Sync deploy directory
+        run: |
+          cd "$DEPLOY_DIR"
+          git fetch origin main
+          git reset --hard origin/main
+
+      # The host has no Java, so the tests run in a Maven container. Testcontainers inside it starts
+      # its own PostgreSQL with pgvector through the host's Docker on a random port, so the tests can
+      # never reach the live database. Host networking lets the test JVM reach that port on localhost.
+      # Running as the runner's own user keeps target/ deletable by the next git reset.
+      - name: Run tests
+        run: |
+          mkdir -p "$HOME/.cache/javachat-m2"
+          docker run --rm \
+            --network host \
+            --user "$(id -u):$(id -g)" \
+            --group-add "$(stat -c %g /var/run/docker.sock)" \
+            -e HOME=/tmp \
+            -e TESTCONTAINERS_HOST_OVERRIDE=localhost \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/javachat-m2:/m2" \
+            -v "$DEPLOY_DIR:/app" \
+            -w /app \
+            maven:3.9-eclipse-temurin-21 \
+            mvn -B -q test -Dmaven.repo.local=/m2
+
+      # The old containers keep serving while the new image builds.
+      - name: Build image
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose --profile app build
+
+      - name: Deploy
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose --profile app up -d --remove-orphans
+
+      - name: Check the app is healthy
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          port=$(docker compose --profile app port app 8080 | cut -d: -f2)
+          for i in $(seq 1 30); do
+            if curl -fs "http://127.0.0.1:$port/actuator/health" | grep -q UP; then exit 0; fi
+            sleep 3
+          done
+          docker compose --profile app logs --tail 80 app
+          exit 1
+
+      # Only dangling layers left behind by earlier builds; tagged images of other projects are untouched.
+      - name: Remove old image layers
+        if: always()
+        run: docker image prune -f
