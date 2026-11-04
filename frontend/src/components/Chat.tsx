@@ -25,14 +25,26 @@ export function Chat({ user, theme, onToggleTheme, onSignOut, onAccountDeleted, 
     useChat(onUnauthorized, refreshMemories)
   const [draft, setDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // True while the user is at the bottom. Scrolling up detaches the view from the reply,
+  // scrolling back down attaches it again, like Claude's chat.
+  const stickToBottom = useRef(true)
 
-  // Follow the newest message as it grows. Older messages load at the top without
-  // changing the last one, so they do not pull the view down.
+  function onScroll() {
+    const scroll = scrollRef.current
+    if (!scroll) return
+    const distanceFromBottom = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight
+    stickToBottom.current = distanceFromBottom < 80
+  }
+
+  // Follow the newest message as it types, but only while the user has not scrolled away.
+  // Instant, not smooth: a new smooth animation every frame would fight the mouse wheel.
+  // Older messages load at the top without changing the last one, so they do not pull the view.
   const last = messages.at(-1)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+    const scroll = scrollRef.current
+    if (scroll && stickToBottom.current) scroll.scrollTop = scroll.scrollHeight
   }, [last?.key, last?.content])
 
   // Grow the text box with its content, up to a limit, like every modern chat app.
@@ -52,6 +64,8 @@ export function Chat({ user, theme, onToggleTheme, onSignOut, onAccountDeleted, 
     event.preventDefault()
     const text = draft.trim()
     if (!text || sending) return
+    // Sending always brings the view back down to the new message.
+    stickToBottom.current = true
     setDraft('')
     const sent = await send(text)
     if (!sent) setDraft(text)
@@ -139,7 +153,7 @@ export function Chat({ user, theme, onToggleTheme, onSignOut, onAccountDeleted, 
 
         {!loading && !empty && (
           <>
-            <div className="chat__scroll">
+            <div className="chat__scroll" ref={scrollRef} onScroll={onScroll}>
               <div className="chat__messages">
                 {hasOlder && (
                   <button type="button" className="pill-button chat__older" onClick={() => void loadOlder()} disabled={loadingOlder}>
@@ -149,7 +163,6 @@ export function Chat({ user, theme, onToggleTheme, onSignOut, onAccountDeleted, 
                 {messages.map(message => (
                   <MessageView key={message.key} message={message} />
                 ))}
-                <div ref={bottomRef} className="chat__anchor" />
               </div>
             </div>
             <div className="chat__dock">

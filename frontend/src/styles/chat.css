@@ -107,10 +107,6 @@
   padding: 8px 16px;
 }
 
-.chat__anchor {
-  height: 1px;
-}
-
 .chat__dock {
   padding: 0 24px 22px;
   background: linear-gradient(to bottom, transparent, var(--c-bg-page) 28%);
