@@ -21,7 +21,9 @@ public class ChatRateLimiter {
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
         if (!probe.isConsumed()) {
-            long retryAfterSeconds = Math.max(1, Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1);
+            // Round up, so an exact 6 second wait says 6 and not 7, and a 5.2 second wait says 6.
+            long nanos = probe.getNanosToWaitForRefill();
+            long retryAfterSeconds = Math.max(1, (nanos + 999_999_999) / 1_000_000_000);
             throw new RateLimitExceededException(retryAfterSeconds);
         }
     }
